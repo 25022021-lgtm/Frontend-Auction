@@ -1,9 +1,6 @@
 plugins {
     java
     application
-    id("org.javamodularity.moduleplugin") version "1.8.15"
-    id("org.openjfx.javafxplugin") version "0.0.13"
-    id("org.beryx.jlink") version "2.25.0"
 }
 
 group = "app"
@@ -14,10 +11,20 @@ repositories {
 }
 
 val junitVersion = "5.12.1"
+val javafxVersion = "25.0.1"
+
+// Detect current OS for JavaFX platform-specific jars
+val osName = System.getProperty("os.name").lowercase()
+val javafxPlatform = when {
+    osName.contains("win") -> "win"
+    osName.contains("mac") -> "mac"
+    osName.contains("linux") -> "linux"
+    else -> throw GradleException("Unsupported OS: $osName")
+}
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(23)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -27,27 +34,21 @@ tasks.withType<JavaCompile> {
 
 application {
     mainModule.set("app.frontendauction")
-    mainClass.set("app.frontendauction.HelloApplication")
-}
-
-javafx {
-    version = "21.0.6"
-    modules = listOf("javafx.controls", "javafx.fxml")
+    mainClass.set("app.frontendauction.Launcher")
 }
 
 dependencies {
+    // JavaFX modules (platform-specific)
+    implementation("org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}")
+    implementation("org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}")
+    implementation("org.openjfx:javafx-fxml:${javafxVersion}:${javafxPlatform}")
+    implementation("org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}")
+
+    // Testing
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-jlink {
-    imageZip.set(layout.buildDirectory.file("/distributions/app-${javafx.platform.classifier}.zip"))
-    options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
-    launcher {
-        name = "app"
-    }
 }

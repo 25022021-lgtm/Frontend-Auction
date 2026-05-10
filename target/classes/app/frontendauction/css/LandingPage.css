@@ -1,0 +1,6 @@
+.landingPage {
+    -fx-background-image: url("../images/background/LandingPage.png");
+    -fx-background-size: stretch;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center center;
+}

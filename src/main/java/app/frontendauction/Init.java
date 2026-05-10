@@ -10,6 +10,9 @@ import java.io.IOException;
 public class Init extends Application {
     @Override
     public void start(Stage stage) throws IOException {
+        // Đăng ký stage cho SceneManager để chuyển cảnh
+        SceneManager.setStage(stage);
+
         FXMLLoader fxmlLoader = new FXMLLoader(Init.class.getResource("fxml/landingPage.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         stage.setScene(scene);
@@ -18,3 +21,4 @@ public class Init extends Application {
         stage.show();
     }
 }
+

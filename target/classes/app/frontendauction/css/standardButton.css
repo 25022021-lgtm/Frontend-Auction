@@ -1,0 +1,27 @@
+.app-button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: black;
+
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+
+    -fx-padding: 6 14 6 14;
+
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+
+
+
+    -fx-cursor: hand;
+}
+
+.app-button:hover {
+    -fx-background-color: #f4fff4;
+}
+
+.app-button:pressed {
+    -fx-background-color: #e8ffe8;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
