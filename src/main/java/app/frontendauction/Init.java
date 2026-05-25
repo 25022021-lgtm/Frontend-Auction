@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import app.frontendauction.controller.SceneManager;
 
 public class Init extends Application {
     @Override

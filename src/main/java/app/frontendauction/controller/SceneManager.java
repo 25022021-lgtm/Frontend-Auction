@@ -1,4 +1,4 @@
-package app.frontendauction;
+package app.frontendauction.controller;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -30,7 +30,7 @@ public class SceneManager {
     public static void switchScene(String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    SceneManager.class.getResource(fxmlPath));
+                    SceneManager.class.getResource("/app/frontendauction/" + fxmlPath));
             Parent root = loader.load();
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);
@@ -46,7 +46,7 @@ public class SceneManager {
     public static void switchScene(String fxmlPath, double width, double height) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    SceneManager.class.getResource(fxmlPath));
+                    SceneManager.class.getResource("/app/frontendauction/" + fxmlPath));
             Parent root = loader.load();
             Scene scene = new Scene(root, width, height);
             primaryStage.setScene(scene);
@@ -63,7 +63,7 @@ public class SceneManager {
     public static <T> T switchSceneAndGetController(String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    SceneManager.class.getResource(fxmlPath));
+                    SceneManager.class.getResource("/app/frontendauction/" + fxmlPath));
             Parent root = loader.load();
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);

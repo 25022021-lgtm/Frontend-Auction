@@ -1,10 +1,13 @@
-package app.frontendauction;
+package app.frontendauction.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
-import app.frontendauction.network.ApiClient;
+import app.frontendauction.dto.response.BalanceResponse;
+import app.frontendauction.dto.response.GetItemsResponse;
+import app.frontendauction.dto.response.ItemData;
+import app.frontendauction.dto.response.UserResponse;
 import app.frontendauction.network.AuthService;
 import app.frontendauction.network.ItemService;
 
@@ -27,13 +30,14 @@ public class DashboardController {
 
     private void loadUserProfile() {
         new Thread(() -> {
-            String profile = AuthService.getMyProfile();
+            UserResponse profile = AuthService.getMyProfile();
             if (profile != null) {
-                String username = ApiClient.extractString(profile, "username");
-                String displayName = ApiClient.extractString(profile, "displayName");
                 Platform.runLater(() -> {
                     if (usernameLabel != null) {
-                        usernameLabel.setText(displayName != null ? displayName : username);
+                        String display = profile.getDisplayName() != null
+                                ? profile.getDisplayName()
+                                : profile.getUsername();
+                        usernameLabel.setText(display);
                     }
                 });
             }
@@ -42,12 +46,11 @@ public class DashboardController {
 
     private void loadBalance() {
         new Thread(() -> {
-            String balanceJson = AuthService.getBalance();
-            if (balanceJson != null) {
-                double balance = ApiClient.extractDouble(balanceJson, "balance");
+            BalanceResponse balanceResponse = AuthService.getBalance();
+            if (balanceResponse != null && balanceResponse.getBalance() != null) {
                 Platform.runLater(() -> {
                     if (balanceLabel != null) {
-                        balanceLabel.setText(String.format("$%.2f", balance));
+                        balanceLabel.setText(String.format("$%.2f", balanceResponse.getBalance()));
                     }
                 });
             }
@@ -68,10 +71,18 @@ public class DashboardController {
             contentLabel.setText("Đang tải danh sách items...");
         }
         new Thread(() -> {
-            String items = ItemService.getItems(0, 10);
+            GetItemsResponse itemsResponse = ItemService.getItems(0, 10);
             Platform.runLater(() -> {
                 if (contentLabel != null) {
-                    contentLabel.setText("Items: " + items);
+                    if (itemsResponse.getStatus() && itemsResponse.getItems() != null) {
+                        StringBuilder sb = new StringBuilder("Items:\n");
+                        for (ItemData item : itemsResponse.getItems()) {
+                            sb.append(String.format("• [%d] %s\n", item.getItemId(), item.getTitle()));
+                        }
+                        contentLabel.setText(sb.toString());
+                    } else {
+                        contentLabel.setText("Lỗi: " + itemsResponse.getMessage());
+                    }
                 }
             });
         }).start();

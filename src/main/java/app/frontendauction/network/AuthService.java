@@ -2,8 +2,18 @@ package app.frontendauction.network;
 
 import java.net.http.HttpResponse;
 
+import app.frontendauction.dto.request.DepositRequest;
+import app.frontendauction.dto.request.LoginRequest;
+import app.frontendauction.dto.request.RefreshTokenRequest;
+import app.frontendauction.dto.request.RegisterRequest;
+import app.frontendauction.dto.response.AuthResponse;
+import app.frontendauction.dto.response.BalanceResponse;
+import app.frontendauction.dto.response.BaseResponse;
+import app.frontendauction.dto.response.UserResponse;
+
 /**
  * Xử lý authentication: login, register, refresh token.
+ * Sử dụng DTO để serialize/deserialize JSON thay vì build string thủ công.
  */
 public class AuthService {
 
@@ -14,18 +24,16 @@ public class AuthService {
      */
     public static boolean login(String username, String password) {
         try {
-            String json = String.format(
-                    "{\"username\":\"%s\",\"password\":\"%s\"}", username, password);
+            LoginRequest request = new LoginRequest(username, password);
+            String json = ApiClient.toJson(request);
 
             HttpResponse<String> response = ApiClient.post("/login", json);
 
             if (response.statusCode() == 200) {
-                String body = response.body();
-                String accessToken = ApiClient.extractString(body, "accessToken");
-                String refreshToken = ApiClient.extractString(body, "refreshToken");
+                AuthResponse authResponse = ApiClient.fromJson(response.body(), AuthResponse.class);
 
-                if (accessToken != null && refreshToken != null) {
-                    ApiClient.setTokens(accessToken, refreshToken);
+                if (authResponse.getAccessToken() != null && authResponse.getRefreshToken() != null) {
+                    ApiClient.setTokens(authResponse.getAccessToken(), authResponse.getRefreshToken());
                     return true;
                 }
             }
@@ -38,18 +46,20 @@ public class AuthService {
     /**
      * Đăng ký user mới.
      *
-     * @return response body từ server (JSON)
+     * @return BaseResponse từ server
      */
-    public static String register(String username, String displayName, String password) {
+    public static BaseResponse register(String username, String displayName, String password) {
         try {
-            String json = String.format(
-                    "{\"username\":\"%s\",\"displayName\":\"%s\",\"password\":\"%s\"}",
-                    username, displayName, password);
+            RegisterRequest request = new RegisterRequest(username, displayName, password);
+            String json = ApiClient.toJson(request);
 
             HttpResponse<String> response = ApiClient.post("/register", json);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Không thể kết nối tới server: " + e.getMessage() + "\"}";
+            BaseResponse error = new BaseResponse();
+            error.setStatus(false);
+            error.setMessage("Không thể kết nối tới server: " + e.getMessage());
+            return error;
         }
     }
 
@@ -63,16 +73,15 @@ public class AuthService {
             String currentRefresh = ApiClient.getRefreshToken();
             if (currentRefresh == null) return false;
 
-            String json = String.format("{\"refreshToken\":\"%s\"}", currentRefresh);
+            RefreshTokenRequest request = new RefreshTokenRequest(currentRefresh);
+            String json = ApiClient.toJson(request);
             HttpResponse<String> response = ApiClient.post("/refresh", json);
 
             if (response.statusCode() == 200) {
-                String body = response.body();
-                String newAccess = ApiClient.extractString(body, "accessToken");
-                String newRefresh = ApiClient.extractString(body, "refreshToken");
+                AuthResponse authResponse = ApiClient.fromJson(response.body(), AuthResponse.class);
 
-                if (newAccess != null && newRefresh != null) {
-                    ApiClient.setTokens(newAccess, newRefresh);
+                if (authResponse.getAccessToken() != null && authResponse.getRefreshToken() != null) {
+                    ApiClient.setTokens(authResponse.getAccessToken(), authResponse.getRefreshToken());
                     return true;
                 }
             }
@@ -92,18 +101,18 @@ public class AuthService {
     /**
      * Lấy thông tin user hiện tại (GET /users/me).
      *
-     * @return JSON string chứa thông tin user
+     * @return UserResponse chứa thông tin user, hoặc null nếu lỗi
      */
-    public static String getMyProfile() {
+    public static UserResponse getMyProfile() {
         try {
             HttpResponse<String> response = ApiClient.getAuth("/users/me");
             if (response.statusCode() == 200) {
-                return response.body();
+                return ApiClient.fromJson(response.body(), UserResponse.class);
             } else if (response.statusCode() == 401) {
                 // Token expired → thử refresh
                 if (refreshAccessToken()) {
                     response = ApiClient.getAuth("/users/me");
-                    return response.body();
+                    return ApiClient.fromJson(response.body(), UserResponse.class);
                 }
             }
         } catch (Exception e) {
@@ -115,11 +124,11 @@ public class AuthService {
     /**
      * Lấy số dư tài khoản (GET /users/me/balance).
      */
-    public static String getBalance() {
+    public static BalanceResponse getBalance() {
         try {
             HttpResponse<String> response = ApiClient.getAuth("/users/me/balance");
             if (response.statusCode() == 200) {
-                return response.body();
+                return ApiClient.fromJson(response.body(), BalanceResponse.class);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,13 +139,17 @@ public class AuthService {
     /**
      * Nạp tiền vào tài khoản.
      */
-    public static String deposit(double amount) {
+    public static BaseResponse deposit(double amount) {
         try {
-            String json = String.format("{\"amount\":%.2f}", amount);
+            DepositRequest request = new DepositRequest(amount);
+            String json = ApiClient.toJson(request);
             HttpResponse<String> response = ApiClient.postAuth("/users/me/deposit", json);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BaseResponse error = new BaseResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 }

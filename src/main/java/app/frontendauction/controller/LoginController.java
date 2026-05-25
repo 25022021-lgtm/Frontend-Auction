@@ -1,4 +1,4 @@
-package app.frontendauction;
+package app.frontendauction.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;

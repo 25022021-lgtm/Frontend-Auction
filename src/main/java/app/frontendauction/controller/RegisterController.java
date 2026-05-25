@@ -1,4 +1,4 @@
-package app.frontendauction;
+package app.frontendauction.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
-import app.frontendauction.network.ApiClient;
+import app.frontendauction.dto.response.BaseResponse;
 import app.frontendauction.network.AuthService;
 
 /**
@@ -55,13 +55,11 @@ public class RegisterController {
         showStatus("Đang đăng ký...", false);
 
         new Thread(() -> {
-            String response = AuthService.register(username, displayName, password);
-            boolean success = ApiClient.extractBoolean(response, "status");
-            String message = ApiClient.extractMessage(response);
+            BaseResponse response = AuthService.register(username, displayName, password);
 
             Platform.runLater(() -> {
                 registerButton.setDisable(false);
-                if (success) {
+                if (response.getStatus()) {
                     showStatus("Đăng ký thành công! Chuyển tới Login...", false);
                     // Chờ 1.5 giây rồi chuyển sang Login
                     new Thread(() -> {
@@ -69,7 +67,7 @@ public class RegisterController {
                         Platform.runLater(() -> SceneManager.switchScene("fxml/login.fxml"));
                     }).start();
                 } else {
-                    showStatus(message, true);
+                    showStatus(response.getMessage(), true);
                 }
             });
         }).start();

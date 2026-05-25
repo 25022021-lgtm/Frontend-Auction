@@ -2,8 +2,17 @@ package app.frontendauction.network;
 
 import java.net.http.HttpResponse;
 
+import app.frontendauction.dto.request.BidPostRequest;
+import app.frontendauction.dto.request.PublishItemRequest;
+import app.frontendauction.dto.response.BaseItemResponse;
+import app.frontendauction.dto.response.BaseResponse;
+import app.frontendauction.dto.response.BidPostResponse;
+import app.frontendauction.dto.response.GetItemsResponse;
+import app.frontendauction.dto.response.ItemStatusResponse;
+
 /**
  * Service gọi API liên quan tới Items và Bidding.
+ * Sử dụng DTO để serialize/deserialize JSON.
  */
 public class ItemService {
 
@@ -12,37 +21,46 @@ public class ItemService {
     /**
      * Lấy danh sách items phân trang (GET /items?page=&size=).
      */
-    public static String getItems(int page, int size) {
+    public static GetItemsResponse getItems(int page, int size) {
         try {
             String path = String.format("/items?page=%d&size=%d", page, size);
             HttpResponse<String> response = ApiClient.get(path);
-            return response.body();
+            return ApiClient.fromJson(response.body(), GetItemsResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi kết nối: " + e.getMessage() + "\"}";
+            GetItemsResponse error = new GetItemsResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi kết nối: " + e.getMessage());
+            return error;
         }
     }
 
     /**
      * Lấy chi tiết 1 item (GET /items/{itemId}).
      */
-    public static String getItem(long itemId) {
+    public static BaseItemResponse getItem(long itemId) {
         try {
             HttpResponse<String> response = ApiClient.get("/items/" + itemId);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseItemResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BaseItemResponse error = new BaseItemResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
     /**
      * Lấy trạng thái item (GET /item/status/{itemId}).
      */
-    public static String getItemStatus(long itemId) {
+    public static ItemStatusResponse getItemStatus(long itemId) {
         try {
             HttpResponse<String> response = ApiClient.get("/item/status/" + itemId);
-            return response.body();
+            return ApiClient.fromJson(response.body(), ItemStatusResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            ItemStatusResponse error = new ItemStatusResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
@@ -51,42 +69,50 @@ public class ItemService {
     /**
      * Đăng item mới lên đấu giá (POST /items).
      */
-    public static String publishItem(String title, String description, long endTime,
-                                     double startingPrice, double buyItNowPrice, double bidIncrement) {
+    public static BaseResponse publishItem(String title, String description, long endTime,
+                                           double startingPrice, double buyItNowPrice, double bidIncrement) {
         try {
-            String json = String.format(
-                    "{\"title\":\"%s\",\"description\":\"%s\",\"endTime\":%d," +
-                            "\"startingPrice\":%.2f,\"buyItNowPrice\":%.2f,\"bidIncrement\":%.2f}",
+            PublishItemRequest request = new PublishItemRequest(
                     title, description, endTime, startingPrice, buyItNowPrice, bidIncrement);
+            String json = ApiClient.toJson(request);
             HttpResponse<String> response = ApiClient.postAuth("/items", json);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BaseResponse error = new BaseResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
     /**
      * Hủy item (POST /items/cancel/{itemId}).
      */
-    public static String cancelItem(long itemId) {
+    public static BaseResponse cancelItem(long itemId) {
         try {
             HttpResponse<String> response = ApiClient.postAuthNoBody("/items/cancel/" + itemId);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BaseResponse error = new BaseResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
     /**
      * Lấy danh sách items do user đăng (GET /items/listings/{username}).
      */
-    public static String getMyListings(String username, int page, int size) {
+    public static GetItemsResponse getMyListings(String username, int page, int size) {
         try {
             String path = String.format("/items/listings/%s?page=%d&size=%d", username, page, size);
             HttpResponse<String> response = ApiClient.getAuth(path);
-            return response.body();
+            return ApiClient.fromJson(response.body(), GetItemsResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            GetItemsResponse error = new GetItemsResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
@@ -95,25 +121,32 @@ public class ItemService {
     /**
      * Đặt bid (POST /bid).
      */
-    public static String placeBid(long itemId, double bidAmount) {
+    public static BidPostResponse placeBid(long itemId, double bidAmount) {
         try {
-            String json = String.format("{\"itemId\":%d,\"bidAmount\":%.2f}", itemId, bidAmount);
+            BidPostRequest request = new BidPostRequest(itemId, bidAmount);
+            String json = ApiClient.toJson(request);
             HttpResponse<String> response = ApiClient.postAuth("/bid", json);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BidPostResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BidPostResponse error = new BidPostResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 
     /**
      * Mua ngay (POST /buy-now/{itemId}).
      */
-    public static String buyNow(long itemId) {
+    public static BaseResponse buyNow(long itemId) {
         try {
             HttpResponse<String> response = ApiClient.postAuthNoBody("/buy-now/" + itemId);
-            return response.body();
+            return ApiClient.fromJson(response.body(), BaseResponse.class);
         } catch (Exception e) {
-            return "{\"status\":false,\"message\":\"Lỗi: " + e.getMessage() + "\"}";
+            BaseResponse error = new BaseResponse();
+            error.setStatus(false);
+            error.setMessage("Lỗi: " + e.getMessage());
+            return error;
         }
     }
 

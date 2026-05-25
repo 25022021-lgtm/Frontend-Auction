@@ -8,19 +8,45 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 
+import com.google.gson.Gson;
+
 /**
  * Singleton HTTP client cho mọi request tới backend.
- * Quản lý base URL, JWT tokens, và các phương thức tiện ích.
+ * Quản lý base URL, JWT tokens, Gson instance và các phương thức tiện ích.
  */
 public class ApiClient {
     private static final String BASE_URL = "http://localhost:8080";
     private static final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
+    private static final Gson gson = new Gson();
 
     // JWT tokens - được set sau khi login thành công
     private static String accessToken = null;
     private static String refreshToken = null;
+
+    // ===== Gson =====
+
+    /**
+     * Lấy Gson instance dùng chung.
+     */
+    public static Gson getGson() {
+        return gson;
+    }
+
+    /**
+     * Chuyển object → JSON string.
+     */
+    public static String toJson(Object obj) {
+        return gson.toJson(obj);
+    }
+
+    /**
+     * Chuyển JSON string → object.
+     */
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        return gson.fromJson(json, clazz);
+    }
 
     // ===== Token Management =====
 
@@ -119,66 +145,5 @@ public class ApiClient {
                 .POST(BodyPublishers.noBody())
                 .build();
         return client.send(request, BodyHandlers.ofString());
-    }
-
-    // ===== JSON Parsing Tiện ích (đơn giản, không cần thư viện) =====
-
-    /**
-     * Trích xuất giá trị string từ JSON.
-     * Ví dụ: extractString(json, "accessToken") → "eyJhbG..."
-     */
-    public static String extractString(String json, String field) {
-        String key = "\"" + field + "\":\"";
-        int start = json.indexOf(key);
-        if (start == -1) return null;
-        start += key.length();
-        int end = json.indexOf("\"", start);
-        if (end == -1) return null;
-        return json.substring(start, end);
-    }
-
-    /**
-     * Trích xuất giá trị boolean từ JSON.
-     * Ví dụ: extractBoolean(json, "status") → true
-     */
-    public static boolean extractBoolean(String json, String field) {
-        String key = "\"" + field + "\":";
-        int start = json.indexOf(key);
-        if (start == -1) return false;
-        start += key.length();
-        return json.substring(start).trim().startsWith("true");
-    }
-
-    /**
-     * Trích xuất giá trị number từ JSON.
-     * Ví dụ: extractDouble(json, "balance") → 1000.0
-     */
-    public static double extractDouble(String json, String field) {
-        String key = "\"" + field + "\":";
-        int start = json.indexOf(key);
-        if (start == -1) return 0.0;
-        start += key.length();
-        StringBuilder sb = new StringBuilder();
-        for (int i = start; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (Character.isDigit(c) || c == '.' || c == '-') {
-                sb.append(c);
-            } else if (!sb.isEmpty()) {
-                break;
-            }
-        }
-        try {
-            return Double.parseDouble(sb.toString());
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
-    }
-
-    /**
-     * Trích xuất message từ BaseResponse JSON.
-     */
-    public static String extractMessage(String json) {
-        String msg = extractString(json, "message");
-        return msg != null ? msg : json;
     }
 }
